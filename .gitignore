@@ -1,0 +1,28 @@
+# --- UV ---
+# Cache do uv
+.uv/
+# Versão específica do python gerenciada pelo uv (se aplicável)
+.python-version
+
+# --- Python / Ambientes Virtuais ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+venv/
+ENV/
+env/
+
+# --- Logs e Relatórios de Execução ---
+logs/
+*.log
+src/data/resultado_processamento_*.xlsx
+
+# --- Sistema Operacional ---
+.DS_Store
+Thumbs.db
+
+# --- IDEs e Editores ---
+.vscode/
+.env

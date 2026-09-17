@@ -1,0 +1,22 @@
+[project]
+name = "automaca-hap"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "juarez", email = "juarezgcjr@gmail.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "dotenv>=0.9.9",
+    "openpyxl>=3.1.5",
+    "pandas>=3.0.5",
+    "selenium>=4.49.0",
+]
+
+[project.scripts]
+automaca-hap = "automaca_hap:main"
+
+[build-system]
+requires = ["uv_build>=0.12.5,<0.13.0"]
+build-backend = "uv_build"
