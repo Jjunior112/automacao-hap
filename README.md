@@ -97,3 +97,22 @@ O arquivo conterá todas as colunas originais acrescidas de duas novas colunas d
 
 * **Status:** Indicará `Sucesso` ou `Erro`.
 * **Mensagem:** Detalhará o motivo de eventuais falhas (como CPF divergente, código inválido ou campos vazios) ou o sucesso da operação.
+
+---
+
+## ☁️ Sugestão de Arquitetura de Execução (Nuvem e Integração)
+
+Para ambientes de produção corporativos, este projeto pode ser facilmente escalado e integrado a fluxos automatizados sem a necessidade de intervenção manual:
+
+1. **Dockerização (Containerização)**:
+   * A aplicação pode ser empacotada em um `Dockerfile` (garantindo o ambiente Python, dependências do `uv` e o Google Chrome configurado em modo `--headless`).
+   * Pode ser hospedada em qualquer máquina virtual na nuvem (como uma Azure Virtual Machine - AVM ou AWS EC2).
+
+2. **Microsserviço com FastAPI**:
+   * Transformar o script principal em uma API utilizando o **FastAPI**.
+   * Um endpoint `POST` (`/api/v1/precancelamento/processar`) recebe o arquivo via `multipart/form-data`, valida as colunas em memória (retornando `400` em caso de falha estrutural) e executa a automação.
+
+3. **Orquestração com Power Automate**:
+   * **Gatilho**: Monitora uma pasta específica no SharePoint ou OneDrive. Quando um novo arquivo Excel é adicionado, o fluxo é disparado.
+   * **Disparo**: O Power Automate envia o arquivo via requisição HTTP para a API hospedada na nuvem.
+   * **Retorno e Armazenamento**: A API processa os dados com o Selenium em memória e **devolve o arquivo Excel enriquecido diretamente na resposta HTTP** (`StreamingResponse`). O Power Automate recebe o arquivo de volta e o salva automaticamente nas subpastas corporativas correspondentes (ex: `Sucessos` ou `Erros`).
