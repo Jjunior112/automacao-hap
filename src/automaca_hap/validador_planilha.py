@@ -49,7 +49,7 @@ class ValidadorPlanilha:
         if "1" in acoes_presentes:
             colunas_obrigatorias.extend([
                 "CPF", "Matricula", "Nome", "DataNasc", "Sexo", "EstadoCivil", 
-                "Mae", "DataAdm", "Unidade", "Plano", "CEP", "Endereco", "Bairro", "Cidade", "Uf"
+                "Mae", "DataAdm", "Unidade", "Plano", "CEP", "Endereco", "Numero","Bairro", "Cidade", "Uf"
             ])
 
         # Remove duplicatas na lista de verificação
