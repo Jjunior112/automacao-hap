@@ -1,118 +1,179 @@
-# 🤖 Automação de Pré-Cancelamento - Portal Hapvida
+# Automação Hapvida — Inclusão e Pré-Cancelamento de Titulares
 
-Automação em Python utilizando **Selenium** para realizar o login no portal Hapvida e executar o fluxo de pré-cancelamento de titulares em lote, a partir de uma planilha Excel. O projeto gerencia dependências e ambiente de execução de forma moderna e ultrarrápida utilizando o **`uv`**.
-
----
-
-## 🛠️ Tecnologias Utilizadas
-
-* **Python** (versão gerenciada pelo `uv`)
-* **`uv`** (Gerenciador de pacotes e projetos Python)
-* **Selenium WebDriver** (Automação web)
-* **Pandas & Openpyxl** (Manipulação e leitura/escrita de arquivos Excel)
-* **Python-Dotenv** (Gerenciamento de variáveis de ambiente sensíveis)
+Automação em Python com **Selenium** para login no portal Hapvida e processamento em lote de titulares a partir de uma planilha Excel. O fluxo é controlado pela coluna **Acao**: inclusão de titular ou pré-cancelamento de titular ativo. Dependências e ambiente são gerenciados pelo **`uv`**.
 
 ---
 
-## 📁 Estrutura do Projeto
+## Tecnologias
+
+* **Python** `>= 3.14` (versão pinada em `.python-version`)
+* **`uv`** — gerenciador de pacotes e ambiente virtual
+* **Selenium WebDriver** — automação no Google Chrome
+* **Pandas** e **Openpyxl** — leitura e escrita de Excel
+* **python-dotenv** — credenciais via `.env`
+
+---
+
+## O que a automação faz
+
+1. Valida a planilha `src/data/dados.xlsx` (arquivo e colunas obrigatórias conforme as ações presentes).
+2. Abre o Chrome, acessa a URL de login e autentica **uma vez**, usando o código da primeira empresa válida da planilha e a senha do `.env`.
+3. Percorre cada linha e despacha a operação:
+   * **Acao `1`** — Inclusão de Titular
+   * **Acao `2`** — Pré-cancelamento de Titular Ativo
+4. Gera um relatório Excel com `Status` e `Mensagem` em `src/data/processamentos/`.
+5. Grava log em terminal e em `src/logs/execucao.log`.
+
+Há uma pausa de 5 segundos entre registros. O Chrome **não** inicia em modo headless (a opção está comentada em `main.py`).
+
+### Ação 1 — Inclusão de Titular
+
+Acessa **Inclusão de Titular**, busca o CPF e preenche apenas campos que estiverem vazios na tela (dados pessoais, admissão, unidade/plano e endereço). Datas são normalizadas para `dd/mm/yyyy`; CEP e CPF são tratados como dígitos.
+
+> **Estado atual:** o clique no botão final de inclusão está desativado. O fluxo valida o preenchimento, retorna ao menu e registra sucesso sem gravar o cadastro no portal.
+
+### Ação 2 — Pré-cancelamento de Titular Ativo
+
+Acessa **Pré-cancelamento de Titular Ativo**, informa os 11 primeiros caracteres da carteirinha, seleciona o motivo **Demissão Rotativa** e confirma. Falha se o portal retornar código de titular inválido (inexistente, não ativo ou sem dependentes).
+
+---
+
+## Estrutura do projeto
 
 ```text
-automacao-hapvida/
-├── .env                  # Variáveis de ambiente (URL de login e senha)
-├── .gitignore            # Arquivos ignorados pelo Git
-├── README.md             # Documentação do projeto
-├── pyproject.toml        # Configuração e dependências do uv
-├── uv.lock               # Trava de versões do uv
+automaca-hap/
+├── .env                          # URL de login e senha (não versionado)
+├── .gitignore
+├── README.md
+├── pyproject.toml
+├── uv.lock
 └── src/
-    ├── automacao_hap/
+    ├── automaca_hap/
     │   ├── __init__.py
-    │   ├── actions.py    # Fluxos de login e ações de pré-cancelamento
-    │   ├── main.py       # Script principal de execução e controle de lote
-    │   └── utils.py      # Funções utilitárias e configuração de logger
-    └── data/
-        ├── dados.xlsx    # Planilha de entrada com os dados (Empresa, Carteirinha, CPF)
-        └── resultado_processamento_*.xlsx # Relatórios gerados após a execução
+    │   ├── main.py               # Orquestração: validação, login e lote
+    │   ├── validador_planilha.py # Carga do Excel e colunas obrigatórias
+    │   ├── processador.py        # Iteração das linhas e despacho das ações
+    │   ├── actions.py            # Login e fluxos Selenium no portal
+    │   └── utils.py              # Logger e limpeza de valores
+    ├── data/
+    │   ├── dados.xlsx            # Planilha de entrada
+    │   └── processamentos/       # Relatórios gerados na execução
+    └── logs/
+        └── execucao.log          # Log da execução
 ```
 
 ---
 
-## ⚙️ Pré-requisitos
+## Pré-requisitos
 
-Certifique-se de ter o **`uv`** instalado em sua máquina. Caso não tenha, você pode instalá-lo via terminal:
+* **`uv`** instalado
+* **Google Chrome** instalado (o Selenium usa o ChromeDriver correspondente)
+* Arquivo **`.env`** na raiz do projeto
+* Planilha **`src/data/dados.xlsx`** preenchida
 
 **Linux / macOS:**
+
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
 **Windows (PowerShell):**
+
 ```powershell
 irm https://astral.sh/uv/install.sh | iex
 ```
 
 ---
 
-## 🚀 Instalação e Configuração
+## Instalação e configuração
 
-1. **Clone o repositório ou acesse a pasta do projeto:**
+1. Acesse a pasta do projeto:
+
 ```bash
-cd automacao-hapvida
+cd automaca-hap
 ```
 
-2. **Crie e configure o arquivo `.env` na raiz do projeto contendo as credenciais de acesso:**
+2. Crie o `.env` na raiz:
+
 ```ini
 URL_LOGIN=
 SENHA_LOGIN=
 ```
 
-3. **Prepare a planilha de dados:**
-O arquivo de entrada deve estar localizado em `src/data/dados.xlsx` contendo obrigatoriamente as seguintes colunas de dados:
-* **Empresa**
-* **Carteirinha**
-* **CPF**
+3. Sincronize o ambiente e as dependências:
 
-4. **Sincronize as dependências com o `uv`:**
-O `uv` criará o ambiente virtual e instalará todas as dependências automaticamente baseando-se no `pyproject.toml`:
 ```bash
 uv sync
 ```
 
+4. Prepare `src/data/dados.xlsx` conforme a seção abaixo.
+
 ---
 
-## ▶️ Como Executar
+## Planilha de entrada
 
-Para rodar a automação utilizando o ambiente virtual gerenciado pelo `uv`, execute:
+Arquivo: `src/data/dados.xlsx`
+
+A coluna **Acao** é obrigatória. O validador exige colunas extras de acordo com as ações que existirem no arquivo (não precisa ter todas as colunas se a planilha tiver só um tipo de ação).
+
+| Acao | Operação | Colunas obrigatórias na planilha |
+| --- | --- | --- |
+| `1` | Inclusão de titular | `Empresa`, `Acao`, `CPF`, `Matricula`, `Nome`, `DataNasc`, `Sexo`, `EstadoCivil`, `Mae`, `DataAdm`, `Unidade`, `Plano`, `CEP`, `Endereco`, `Numero`,`Bairro`, `Cidade`, `Uf` |
+| `2` | Pré-cancelamento | `Empresa`, `Acao`, `Carteirinha`, `CPF` |
+
+Colunas opcionais usadas na inclusão, se existirem e o campo na tela estiver vazio: `RG`, `Orgao`, `UfOrgao`, `Logradouro`, `Numero`.
+
+### Regras por linha
+
+* Linhas com `Empresa`, `CPF` ou `Acao` vazios são marcadas como erro e ignoradas.
+* Ação `1` exige **Matrícula** preenchida.
+* Ação `2` exige **Carteirinha** preenchida.
+* Ação diferente de `1` ou `2` é registrada como erro.
+
+O login usa o código da **primeira linha válida** (`Empresa` + `CPF`). Todas as linhas da execução compartilham essa sessão.
+
+---
+
+## Como executar
 
 ```bash
-uv run python src/automacao_hap/main.py
+uv run python src/automaca_hap/main.py
 ```
 
----
-
-## 📊 Relatórios de Saída
-
-Ao finalizar a execução, a automação gerará automaticamente uma planilha de resultado na pasta `src/data/` nomeada com a data e hora exatas da execução (ex: `resultado_processamento_16-09-2026_22-30.xlsx`).
-
-O arquivo conterá todas as colunas originais acrescidas de duas novas colunas de controle:
-
-* **Status:** Indicará `Sucesso` ou `Erro`.
-* **Mensagem:** Detalhará o motivo de eventuais falhas (como CPF divergente, código inválido ou campos vazios) ou o sucesso da operação.
+O Chrome abre maximizado. Encerrar a janela no meio da execução interrompe o lote; o `finally` do script fecha o navegador ao terminar (com sucesso ou erro fatal).
 
 ---
 
-## ☁️ Sugestão de Arquitetura de Execução (Nuvem e Integração)
+## Relatórios e logs
 
-Para ambientes de produção corporativos, este projeto pode ser facilmente escalado e integrado a fluxos automatizados sem a necessidade de intervenção manual:
+Ao final, o processador grava em `src/data/processamentos/` um arquivo no formato:
 
-1. **Dockerização (Containerização)**:
-   * A aplicação pode ser empacotada em um `Dockerfile` (garantindo o ambiente Python, dependências do `uv` e o Google Chrome configurado em modo `--headless`).
-   * Pode ser hospedada em qualquer máquina virtual na nuvem (como uma Azure Virtual Machine - AVM ou AWS EC2).
+```text
+resultado_processamento_17-09-2026_22-30.xlsx
+```
 
-2. **Microsserviço com FastAPI**:
-   * Transformar o script principal em uma API utilizando o **FastAPI**.
-   * Um endpoint `POST` (`/api/v1/precancelamento/processar`) recebe o arquivo via `multipart/form-data`, valida as colunas em memória (retornando `400` em caso de falha estrutural) e executa a automação.
+O relatório replica as colunas originais e adiciona:
 
-3. **Orquestração com Power Automate**:
-   * **Gatilho**: Monitora uma pasta específica no SharePoint ou OneDrive. Quando um novo arquivo Excel é adicionado, o fluxo é disparado.
-   * **Disparo**: O Power Automate envia o arquivo via requisição HTTP para a API hospedada na nuvem.
-   * **Retorno e Armazenamento**: A API processa os dados com o Selenium em memória e **devolve o arquivo Excel enriquecido diretamente na resposta HTTP** (`StreamingResponse`). O Power Automate recebe o arquivo de volta e o salva automaticamente nas subpastas corporativas correspondentes (ex: `Sucessos` ou `Erros`).
+* **Status** — `Sucesso` ou `Erro`
+* **Mensagem** — detalhe da operação ou do motivo da falha (campos vazios, ação desconhecida, código inválido, falha no Selenium, etc.)
+
+O log contínuo fica em `src/logs/execucao.log`.
+
+---
+
+## Observações
+
+* A inclusão ainda está em modo de validação: o cadastro **não** é enviado no portal.
+* O pré-cancelamento **é** confirmado no portal quando o fluxo conclui com sucesso.
+* Há pausas fixas (`sleep`) em login, submits e AJAX (CEP, admissão, unidade). Ambientes lentos podem exigir ajuste desses tempos em `actions.py`.
+* Relatórios e logs não devem ser versionados; o `.gitignore` já ignora `.env` e arquivos de log.
+
+---
+
+## Sugestão de arquitetura (nuvem e integração)
+
+Para uso corporativo sem execução manual local:
+
+1. **Container** — empacotar Python, `uv` e Chrome em modo `--headless` e hospedar em VM (Azure, AWS EC2, etc.).
+2. **API (FastAPI)** — endpoint `POST` que recebe o Excel, valida colunas em memória e dispara o processamento.
+3. **Power Automate** — gatilho em pasta SharePoint/OneDrive, envio do arquivo à API e gravação do Excel de retorno em pastas de sucesso/erro.
